@@ -1,0 +1,332 @@
+<html>
+<head>
+<title> Реакт тест </title>
+ 
+</head>
+<body>
+<div id="root"></div>
+		<script crossorigin src="https://unpkg.com/react@16/umd/react.production.min.js"></script>
+		<script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.production.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.6.15/browser.js"></script>
+		
+<style type="text/css">
+	.active {
+		background-color: grey;
+	}
+	.finished {
+		background-color: green;
+	}
+	.deadTime {
+		background-color: red;
+	}
+</style>
+			
+	<script type="text/babel">
+			class Test extends React.Component {
+				constructor(props) {
+					super(props);
+					
+					// Чек хранилища
+					if (!(localStorage.getItem('task'))) { 
+						var testItem = [
+						{
+							"name": "Тест",
+							"dickr": "Тестирование",
+							"prit": "Обычный",
+							"date": "2019-03-30 06:25",
+							"state": "active" 		
+						}
+						];
+						var testItemJSON = JSON.stringify(testItem);
+						localStorage.setItem('task', testItemJSON);
+					}
+					
+					// Изъятие тасков из хранилища
+					var taskJSON2 = localStorage.getItem('task');
+					var task1 = JSON.parse(taskJSON2);
+					
+					this.state = {
+						task: task1, // Массив тасков
+						filtr: "Все", // Фильтр
+						openFormSubmit: "Add", add_editTaskSubmit: "Add", // Кнопочки
+						hiddenForm: true, // Отображение формы
+						// Элементы формы добавления/редактирования:
+						name: "",
+						description: "",
+						priority: "Все",
+						date: "",
+						time: ""
+					};	
+
+					this.onTaskButton = this.onTaskButton.bind(this); // Кнопки тасков
+					this.onFormButton = this.onFormButton.bind(this); //Скрыть/отобразить форму добавления
+					this.selectFiltr = this.selectFiltr.bind(this);	// Смена фильтра
+					this.addNewTask = this.addNewTask.bind(this); // Добавление нового задания
+					
+					this.changeText = this.changeText.bind(this); // Обновление текста в элементах импутах
+					this.changeDate = this.changeDate.bind(this); // Обновление элемента даты/времени в форме
+					this.changePriorit = this.changePriorit.bind(this); // Обновление элемента приоритета
+					
+					this.timer = this.timer.bind(this); // Тайсер дедлайна		
+				}
+				
+				// Событие клика по интерфейсу элементов заданий (завершить, редактировать, удалить)
+				onTaskButton(event){
+					event.preventDefault();
+					
+					if (event.target.value == 'Finish') { // ЗАвершение
+						//event.target.parentNode.parentNode.className = "Finished" ;
+						this.setState({task: 
+							this.state.task.map(function(x,i) {
+								if ( i == event.target.className){
+									return {
+										"name": x.name,
+										"dickr": x.dickr,
+										"prit": x.prit,
+										"date": x.date,
+										"state": "finished"
+									};
+								}
+								else {
+									return x;
+								}
+							})	
+						});
+					}
+					
+					if(event.target.value == 'Edit') { // Редактирование
+						//Заполнение формы начальными значениями и смена назначения для субмит 
+						this.setState({add_editTaskSubmit: "Edit", openFormSubmit: "Esc", hiddenForm: false});
+						document.getElementById('addTaskNew').className = event.target.className;
+						
+						this.setState ({
+							name: this.state.task[event.target.className].name,
+							description: this.state.task[event.target.className].dickr,
+							priority: this.state.task[event.target.className].prit,
+							date: this.state.task[event.target.className].date.split(' ')[0],
+							time: this.state.task[event.target.className].date.split(' ')[1],
+						})	
+					}
+					
+					if(event.target.value == 'Del') { // Удаление
+						this.setState ({
+							task: this.state.task.filter((x, i) => i != event.target.className)
+						});
+					}		
+				}
+				
+				//Открытие/сокрытие формы добавления
+				onFormButton(event){
+					event.preventDefault();
+					
+						if(this.state.hiddenForm == true){
+							this.setState({openFormSubmit: "Esc", hiddenForm: false});
+							// Очистка формы
+							this.setState({
+								name: "",
+								description: "",
+								priority: "",
+								date: "",
+								time: ""
+							});
+						}
+						else {
+								this.setState ({openFormSubmit: "Add", add_editTaskSubmit: "Add", hiddenForm: true});
+							
+						}
+				}
+				
+				//Смена фильтра
+				selectFiltr(event){
+					this.setState({filtr: event.target.value});
+				}
+				
+				//Обновление испутов формы
+				changeText(event){
+					
+					
+					if (event.target.id == 'nameTaskNew') {
+						this.setState({name: event.target.value});
+					}
+					if (event.target.id == 'textTaskNew') {
+						this.setState({description: event.target.value});
+					}
+				}
+				
+				// Обновление даты/времени
+				changeDate(event) {
+					if (event.target.id == 'dateTaskNew') {
+						this.setState({date: event.target.value});
+					}
+					if (event.target.id == 'timeTaskNew') {
+						this.setState({time: event.target.value});
+					}
+				}
+				
+				// Обновление приоритетов
+				changePriorit(event) {
+					this.setState({priority: event.target.value});
+				}
+				
+				//Добавление/ редактирование таска
+				addNewTask(event) {
+					event.preventDefault();
+					
+					if ( this.state.add_editTaskSubmit == "Add") { // Добавление
+
+					var newMas = [{
+						"name":  this.state.name, 
+						"dickr": this.state.description,
+						"prit":  this.state.priority,
+						"date":  this.state.date +' '+ this.state.time,
+						"state": "active"
+					}];
+					
+					this.setState({task: this.state.task.concat(newMas)});
+					this.setState({openFormSubmit: "Add", hiddenForm: true});
+					}
+					
+					if (this.state.add_editTaskSubmit == "Edit") { // Редактирование
+					
+					// Определение переменный для использования внутри функции МАП
+					var name = this.state.name;
+					var description = this.state.description;
+					var priority = this.state.priority;
+					var date = this.state.date;
+					var time = this.state.time;
+
+					this.setState({task: 
+							this.state.task.map(function(x,i) {
+								if (i == document.getElementById('addTaskNew').className){
+									return {
+										"name":  name,
+										"dickr": description,
+										"prit":  priority,
+										"date":  date +' '+ time,
+										"state": "active"
+									};
+								}
+								else {
+									return x;
+								}
+							})	
+						});	
+						
+						this.setState({openFormSubmit: "Add", add_editTaskSubmit: "Add", hiddenForm: true});	
+					}	
+				}
+	
+				timer() { // Таймер тасков
+							this.setState({task: 
+								this.state.task.map(function(x,i) {
+									if ( x.date.length == 16 ) { // Не выполнять, если дата и/или время не установлены
+										var nowDate = new Date;
+										var ye = x.date.split('-')[0];
+										var moun = x.date.split('-')[1]-1;
+										var day = x.date.split('-')[2].split(' ')[0];
+										var hh = x.date.split(' ')[1].split(':')[0];
+										var mm = x.date.split(' ')[1].split(':')[1];
+										var taskDate = new Date(ye, moun, day, hh, mm, 0, 0); 
+										
+										if ( (nowDate > taskDate) && (x.state != 'finished')){ // Если время прошло и задание не выполнено
+											return {
+												"name": x.name,
+												"dickr": x.dickr,
+												"prit": x.prit,
+												"date": x.date,
+												"state": "deadTime"
+											};
+										}
+										else {
+											return x;	
+										}
+									}
+									else {
+										return x;
+									}
+								})	
+							});			
+				}	
+				render() {
+					
+					localStorage.setItem("task", JSON.stringify(this.state.task)); // Обновление хранилища перед каждым рендером
+					
+					// Элементы таск листа
+					var state = this.state;
+					var onTaskButton = this.onTaskButton;
+					this.taskElement = this.state.task.map(function(x,i) {
+						if ((state.filtr == 'Все') || (state.filtr == x.prit)){ // Фильтрация
+							return (
+								<li className={x.state}>
+								<b>{x.name}</b><br />
+								{x.dickr}<br />
+								Приоритет: {x.prit}<br />
+								<i>Выплнить к:{x.date}</i><br />
+								<form onClick={onTaskButton}>
+								<input className={i} type="submit" value="Finish" />
+								<input className={i} type="submit" value="Edit" />
+								<input className={i} type="submit" value="Del"/>
+								</form>
+								</li>
+							);
+						}	
+					});
+					
+					// Главный интерфейс
+					this.formElement = (
+						<form id="mainForm">
+						<label from="priorityTaskFilter"> Отобразить только: </label>
+						<select id="priorityTaskFilter" onChange={this.selectFiltr}>
+							<option value="Все">Все</option>
+							<option value="Обычное">Обычные</option>
+							<option value="Важное">Важные</option>
+							<option value="Очень важное">Очень важные</option>
+						</select>
+						<input id="openForm"type="submit" value={this.state.openFormSubmit} onClick={this.onFormButton}/>
+						</form>
+					);
+					
+					//Форма добавления/редактирования заданий	
+					this.formAdd_Edit =(
+						<form id="formAdd_Edit" hidden = {this.state.hiddenForm}>
+						<label from="nameTaskNew"> Наименование: </label>
+						<input id="nameTaskNew" type="text" value={this.state.name} onChange={this.changeText}/><br />
+						<label from="textTaskNew"> Описание: </label>
+						<input id="textTaskNew" type="textarea" value={this.state.description} onChange={this.changeText}/><br />
+						<label from="priorityTaskNew"> Важность: </label>
+						<select id="priorityTaskNew" value={this.state.priority} onChange={this.changePriorit}>
+							<option value="Все">Все</option>
+							<option value="Обычное">Обычное</option>
+							<option value="Важное">Важное</option>
+							<option value="Очень важное">Очень важное</option>
+						</select><br />
+						<label from="dateTaskNew"> Выполнить к: </label>
+						<input id="dateTaskNew" type="date" value = {this.state.date} onChange={this.changeDate}/>
+						<input id="timeTaskNew" type="time" value = {this.state.time} onChange={this.changeDate}/><br />
+						<input id='addTaskNew'type="submit" value={this.state.add_editTaskSubmit} onClick={this.addNewTask}/><br />
+						</form>
+					);
+						
+					// Таймер обновления (чек дедлайна)
+					setInterval(this.timer, 7000);
+					
+					return (
+						<div>
+						{this.formElement}
+						{this.formAdd_Edit}
+						<ul id="elementTask">
+						{this.taskElement}
+						</ul>
+						</div>
+					);
+				}
+			}
+			
+			ReactDOM.render(
+			  <Test />,
+			  document.getElementById('root')
+			);
+			
+	</script>
+</body>
+</html>
